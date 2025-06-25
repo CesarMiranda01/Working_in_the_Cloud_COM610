@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  # Servicio de backend
+  app:
+    container_name: service_backend_nest_proxy
+    build: ./backend
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - MONGODB_URI=mongodb://mongodb:27017/qmc_website_250605
+      - JWT_SECRET=cesar123
+      - JWT_EXPIRES_IN=15m
+      - JWT_REFRESH_SECRET=jwt-refresh-super-secret-key
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      # Token Settings
+      - JWT_ACCESS_SECRET=tu_super_secreto_complejo_acceso
+      - JWT_ACCESS_EXPIRES_IN=15m
+      - JWT_REFRESH_SECRET=tu_super_secreto_complejo_refresh
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - SESSION_INACTIVITY_TIMEOUT=30m
+      # JWT Configuration
+      - AUTH_ACCESS_TOKEN_SECRET=tu_secreto_super_seguro_para_access_token
+      - AUTH_ACCESS_TOKEN_EXPIRES_IN=15m
+      - AUTH_REFRESH_TOKEN_SECRET=tu_secreto_super_seguro_para_refresh_token
+      - AUTH_REFRESH_TOKEN_EXPIRES_IN=7d
+    depends_on:
+      - mongodb
+      - redis
+    networks:
+      - backend-network
+
+  # Servicio MongoDB
+  mongodb:
+    image: mongo:6
+    container_name: db_service_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=qmc_website_250605
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - backend-network
+
+  # Servicio Redis
+  redis:
+    image: redis:7-alpine
+    container_name: db_service_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend-network
+
+  # Servicio Nginx
+  nginx:
+    image: nginx:latest
+    container_name: service_nginx_proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/certs:/etc/nginx/certs
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - app
+    networks:
+      - backend-network
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  backend-network:
+    driver: bridge

@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Módulo Managers - Totalmente independiente
+model Manager {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  dni     String  @unique
+  age     Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Sin relaciones directas
+}
+
+// Módulo Users - Con datos desnormalizados del Manager
+model User {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  dni       String  @unique
+  // En lugar de relación, guardamos datos desnormalizados
+  managerId String  @db.ObjectId  // Solo referencia ID
+  managerName String // Datos desnormalizados
+  managerDni String  // Datos desnormalizados
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Sin relaciones directas
+}
+
+// Módulo Classes - Con datos desnormalizados de Manager y User
+model Class {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  subject   String
+  // Datos desnormalizados del Manager
+  managerId String  @db.ObjectId
+  managerName String
+  managerDni String
+  // Datos desnormalizados del User
+  userId    String  @db.ObjectId
+  userName  String
+  userDni   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Sin relaciones directas
+}
